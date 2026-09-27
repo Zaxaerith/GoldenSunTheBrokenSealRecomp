@@ -1,0 +1,77 @@
+# Build trees and binary outputs
+build/
+bin/
+out/
+dist/
+*.exe
+*.dll
+*.a
+*.lib
+*.o
+*.obj
+*.so
+*.dylib
+
+# Nintendo ROMs, BIOS dumps, and cartridge saves (never commit or distribute)
+*.gba
+*.gbc
+*.gb
+*.nds
+*.rom
+*.bios
+gba_bios.bin
+open_gba_bios.bin
+GBA_bios.rom
+*.sav
+*.srm
+*.ss*
+*.fla
+*.eep
+
+# Generated intermediate / recompile caches
+recomp/
+recomp_cache/
+src/generated/
+recomp_master_misses*.toml.frag
+recomp_coverage*.json
+recomp_seed_proposals.toml
+
+# Tooling and vendor SDKs (install locally)
+reference/
+third_party/
+gbarecomp-build/
+vendor/
+
+# Logs, test traces, frame dumps, scratch files
+*.log
+*.jsonl
+*.bmp
+*.png
+*.txt
+!README.md
+!LICENSE
+!CMakeLists.txt
+!**/CMakeLists.txt
+!symbols/*.tsv
+
+# Editor / OS metadata
+.vscode/
+.vs/
+.idea/
+*.user
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Agent notes, internal briefs, and private documentation (keep on disk, do not publish)
+AGENT_PROMPT.md
+docs/
+*.tmp
+*.bak
+~*
+
+# Personal credentials / secrets
+*.pem
+*.key
+.env
+.env.*

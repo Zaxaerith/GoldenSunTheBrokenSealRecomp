@@ -1,0 +1,216 @@
+# Golden Sun: The Broken Seal (USA/Europe, AGSE01) — gbarecomp configuration
+
+[program]
+name = "Golden Sun: The Broken Seal"
+id = "gs1"
+load_address = 0x08000000
+size = 0x00800000
+entry_pc = 0x080003C0
+speculative_literal_harvest = true
+aot_scan_start = 0x080000C0
+aot_scan_end = 0x08185024
+static_resume_all = true
+
+[identity]
+sha1 = "5c4695205413df7db52b9a184815a07783999971"
+
+[game]
+short_name = "gs1"
+
+[bios]
+path = "gba_bios.bin"
+sha1 = "300c20df6731a33952ded8c436f7f186d25d3492"
+
+[rom]
+path = "Golden Sun(UE)(Nintendo)(64Mb).gba"
+sha1 = "5c4695205413df7db52b9a184815a07783999971"
+
+[save]
+type = "flash512"
+path = "gs1.sav"
+
+# ── Fixed IWRAM code copies (rom_770.s) ─────────────────────────────────────
+# Note: 0x03000658..0x03001388 (Func_dc8 / SoundMainRAM) is the self-modifying
+# MP2K software mixer (.word 0xfedcba98 placeholders) and is routed to live
+# RAM interpretation via g_runtime_force_interp_hook.
+[[code_copy]]
+runtime_start = 0x03000000
+source_start = 0x08000770
+size = 0x00000658
+name = "iwram_rom_770_part1"
+note = "Master IRQ handler, fixed-point math, fast fill, matrix math, division, LZ decompressor"
+
+[[code_copy]]
+runtime_start = 0x03001388
+source_start = 0x08001AF8
+size = 0x00000078
+name = "iwram_rom_770_part2"
+note = "Fast block copy Func_1af8"
+
+# ── Data ranges inside IWRAM code_copy ──────────────────────────────────────
+[[data_range]]
+start = 0x030000E0
+end = 0x03000118
+note = "Data_850 / Data_864 IRQ handler pointer table in IWRAM"
+
+[[data_range]]
+start = 0x03000350
+end = 0x03000380
+note = "Data_ac0 3x4 matrix buffer in IWRAM"
+
+# ── Non-executable ROM regions (.rodata, embedded tables, assets) ───────────
+[[data_range]]
+start = 0x08000004
+end = 0x080000C0
+note = "GBA ROM header"
+
+[[data_range]]
+start = 0x08000770
+end = 0x08001B70
+note = "rom_770 LMA image in ROM (copied to 0x03000000 at boot)"
+
+[[data_range]]
+start = 0x08002344
+end = 0x08002544
+note = "Sine lookup table embedded in rom_1b70.s"
+
+[[data_range]]
+start = 0x08007320
+end = 0x08009000
+note = "rom_1b70 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080092B8
+end = 0x08009BB8
+note = "Data_92b8 / Data_97b8 embedded in rom_92b8.s"
+
+[[data_range]]
+start = 0x08009D9C
+end = 0x08009E7C
+note = "Data_9d9c scratch buffer in rom_92b8.s"
+
+[[data_range]]
+start = 0x08012F20
+end = 0x08015000
+note = "rom_9000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x08029910
+end = 0x08077000
+note = "rom_15000 .rodata + text strings + alignment padding"
+
+[[data_range]]
+start = 0x0807A828
+end = 0x08084B1C
+note = "rom_77000 .rodata (part 1, before .L84b1c)"
+
+[[data_range]]
+start = 0x08084C24
+end = 0x0808A000
+note = "rom_77000 .rodata (part 2) + alignment padding"
+
+[[data_range]]
+start = 0x0809C410
+end = 0x080A1000
+note = "rom_8a000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080AEA4C
+end = 0x080B0000
+note = "rom_a1000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080B3940
+end = 0x080B5000
+note = "rom_b0000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080C2A0C
+end = 0x080C9000
+note = "rom_b5000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080EDA78
+end = 0x080F0000
+note = "rom_c9000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080F0A5C
+end = 0x080F2000
+note = "rom_f0000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080F38BC
+end = 0x080F4000
+note = "rom_f2000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080F53DC
+end = 0x080F6000
+note = "rom_f4000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080F86F8
+end = 0x080F9000
+note = "rom_f6000 .rodata + alignment padding"
+
+[[data_range]]
+start = 0x080FB794
+end = 0x08185000
+note = "rom_f9000 .rodata + sound data + alignment padding"
+
+[[data_range]]
+start = 0x08185024
+end = 0x08307354
+note = "rom_185000 .rodata + rom_320000 assets (part 1)"
+
+[[data_range]]
+start = 0x08307368
+end = 0x08346BAC
+note = "rom_320000 assets (part 2)"
+
+[[data_range]]
+start = 0x08346BC0
+end = 0x08387008
+note = "rom_320000 assets (part 3)"
+
+[[data_range]]
+start = 0x08387020
+end = 0x08800000
+note = "rom_320000 assets (part 4)"
+
+# ── Excluded false-positive functions ───────────────────────────────────────
+[[exclude_func]]
+addr = 0x08084B1C
+reason = "Data table .L84b1c held in spilled r14 across pop {r1}; bx r1 in Func_799b0"
+
+[[exclude_func]]
+addr = 0x08307354
+reason = "Transitive false-positive branch target from excluded data table 0x08084B1C"
+
+[[exclude_func]]
+addr = 0x0830735C
+reason = "Transitive false-positive fallthrough from excluded data table 0x08084B1C"
+
+[[exclude_func]]
+addr = 0x08346BAC
+reason = "Transitive false-positive branch target from excluded data table 0x08084B1C"
+
+[[exclude_func]]
+addr = 0x08387008
+reason = "Transitive false-positive branch target from excluded data table 0x08084B1C"
+
+[[exclude_func]]
+addr = 0x08387014
+reason = "Transitive false-positive fallthrough from excluded data table 0x08084B1C"
+
+# ---------------------------------------------------------------------------
+# Entry vectors (ROM header branch at 0x08000000 -> _start at 0x080003C0)
+# ---------------------------------------------------------------------------
+[[extra_func]]
+addr = 0x08000000
+mode = "arm"
+
+[[extra_func]]
+addr = 0x080003C0
+mode = "arm"
