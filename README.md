@@ -93,6 +93,22 @@ The recompiled C++ translation units in `src/game/` can be regenerated from your
 
 This runs `gbarecomp build` with `symbols/gs_functions.tsv` and splits the generated output into `src/game/` using `scripts/split_generated.py`.
 
+## Regenerating Static BIOS (Required for LLE boot)
+
+`reference/gbarecomp/src/runtime/generated_bios/bios_recompiled.cpp` and `bios_recompiled.h` are **gitignored** (they embed BIOS-derived lowerings). On a clean checkout the build falls back to BIOS HLE and static coverage degrades. Regenerate locally before building:
+
+```powershell
+# From the project root. Point --bios at your GBA BIOS dump and
+# use the gba_recompile-core binary from your gbarecomp CLI package.
+& "<gbarecomp-cli>\_internal\gba_recompile-core.exe" `
+  --bios "<path>\gba_bios.bin" `
+  --config "reference\gbarecomp\bios\gba_bios.toml" `
+  --out "reference\gbarecomp\src\runtime\generated_bios" `
+  --max-functions 4096
+```
+
+A successful build prints `gbarecomp: BIOS recompiled output present — linking`, and runtime logs show `bios_backend=LLE (recompiled BIOS)`.
+
 ---
 
 ## Running
