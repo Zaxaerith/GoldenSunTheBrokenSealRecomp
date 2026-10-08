@@ -1,0 +1,22 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Golden Sun",
+  "system": "GBA",
+  "type": "recomp",
+  "project": "Golden Sun: The Broken Seal Recomp",
+  "status": "playable",
+  "targets": [
+    "Windows"
+  ],
+  "toolchain": "GBARecomp",
+  "original": {
+    "region": "USA",
+    "sha1": "5c4695205413df7db52b9a184815a07783999971"
+  },
+  "maintainers": [
+    {
+      "name": "Zaxaerith",
+      "link": "https://github.com/Zaxaerith"
+    }
+  ]
+}
