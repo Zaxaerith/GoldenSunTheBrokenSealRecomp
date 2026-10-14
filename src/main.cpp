@@ -1,5 +1,5 @@
 // Golden Sun: The Broken Seal (USA/Europe, AGSE01) — native static recompilation host.
-// Windows GUI subsystem entry point: no console window, no automatic demo playback.
+// Windows GUI subsystem entry point: no console window, player-facing recomp-ui launcher.
 
 #include "runtime.h"
 #include "runtime_arm.h"
@@ -8,13 +8,15 @@
 #include <cstring>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
 #endif
 
-namespace fs = std::filesystem;
+int game_launcher_preboot(std::vector<std::string>&, const gbarecomp::RunOptions&);
+int game_validate_inputs(std::vector<std::string>&, const gbarecomp::RunOptions&);
 
 namespace {
 
@@ -44,8 +46,11 @@ extern "C" int gs1_force_interp_hook(uint32_t pc, int /*thumb*/) {
     return 0;
 }
 
-int run(int argc, char** argv) {
+}  // namespace
+
+int main(int argc, char** argv) {
     // Suppress debug diagnostic dumps and on-the-fly recompile cache in normal runs
+#ifdef _WIN32
     if (!std::getenv("GBARECOMP_SELFHEAL_RECOMPILE"))
         _putenv("GBARECOMP_SELFHEAL_RECOMPILE=0");
     if (!std::getenv("GBARECOMP_MISS_FRAG"))
@@ -54,20 +59,83 @@ int run(int argc, char** argv) {
         _putenv("GBARECOMP_COVERAGE_JSON=NUL");
     if (!std::getenv("GBARECOMP_SESSION_DIAGNOSTICS"))
         _putenv("GBARECOMP_SESSION_DIAGNOSTICS=0");
+#else
+    setenv("GBARECOMP_SELFHEAL_RECOMPILE", "0", 0);
+    setenv("GBARECOMP_MISS_FRAG", "/dev/null", 0);
+    setenv("GBARECOMP_COVERAGE_JSON", "/dev/null", 0);
+    setenv("GBARECOMP_SESSION_DIAGNOSTICS", "0", 0);
+#endif
 
+    // Recomp runtime options for Golden Sun: The Broken Seal
+    gbarecomp::RunOptions options;
+    options.builtin_game_name = "Golden Sun: The Broken Seal";
+    options.builtin_rom_sha1  = "5c4695205413df7db52b9a184815a07783999971";
+    options.builtin_rom_crc32 = 0x6DAEBFBB;
+    options.freely_resizable_window = true;
+    options.expose_assist_tools = false;
+    options.launcher_region = "USA/Europe";
+    options.launcher_game_config = "game.toml";
+    options.launcher_expose_widescreen = false;
+    options.launcher_expose_adaptive_view = false;
+
+    std::vector<std::string> args(argv, argv + argc);
+    const bool player_launch = argc == 1 || (argc == 2 && args[1] == "--launcher");
+
+    std::error_code ec;
+    auto exe_path = std::filesystem::absolute(argv[0], ec);
+    auto exe_dir = ec ? std::filesystem::current_path() : exe_path.parent_path();
+
+    if (player_launch) {
+        // The portable launcher, settings, and assets live beside the EXE.
+        if (!ec) std::filesystem::current_path(exe_dir, ec);
+    }
+
+    // Save path resolution: preserve legacy root-level gs1.sav if already present,
+    // otherwise use saves/gs1.sav cleanly without clobbering or deleting.
+    std::string save_path;
+    bool has_cli_save = false;
+    for (std::size_t i = 1; i < args.size(); ++i) {
+        if ((args[i] == "--save" || args[i] == "--save-path") && i + 1 < args.size()) {
+            has_cli_save = true;
+            save_path = args[i + 1];
+            break;
+        }
+    }
+
+    if (!has_cli_save) {
+        if (std::filesystem::exists(exe_dir / "gs1.sav")) {
+            save_path = (exe_dir / "gs1.sav").string();
+        } else if (std::filesystem::exists("gs1.sav")) {
+            save_path = "gs1.sav";
+        } else {
+            std::filesystem::create_directories(exe_dir / "saves", ec);
+            save_path = (exe_dir / "saves" / "gs1.sav").string();
+        }
+    }
+    options.launcher_save_path = save_path.c_str();
+
+    // Run the recomp-ui GUI launcher preboot
+    if (game_launcher_preboot(args, options)) return 0;
+    // Strict ROM and BIOS gate
+    if (game_validate_inputs(args, options)) return 1;
+
+    if (player_launch) {
+        if (!has_cli_save) {
+            args.emplace_back("--save");
+            args.emplace_back(options.launcher_save_path);
+        }
+        args.emplace_back("--window");
+    }
+
+    // Install MP2K & dynamic RAM interpretation hook
     g_runtime_force_interp_hook = &gs1_force_interp_hook;
 
-    gbarecomp::RunOptions opts{};
-    opts.builtin_game_name = "Golden Sun: The Broken Seal";
-    opts.builtin_rom_sha1  = "5c4695205413df7db52b9a184815a07783999971";
-    opts.builtin_rom_crc32 = 0x6DAEBFBB;
-    opts.freely_resizable_window = true;
-    opts.expose_assist_tools = false;
+    std::vector<char*> native_args;
+    native_args.reserve(args.size());
+    for (auto& arg : args) native_args.push_back(arg.data());
 
-    return gbarecomp::run_game(argc, argv, opts);
+    return gbarecomp::run_game(static_cast<int>(native_args.size()), native_args.data(), options);
 }
-
-}  // namespace
 
 #ifdef _WIN32
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -90,7 +158,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
     }
 
-    int rc = run(argc, argv);
+    int rc = main(argc, argv);
 
     for (int i = 0; i < argc; ++i) {
         if (argv[i]) HeapFree(GetProcessHeap(), 0, argv[i]);
@@ -99,9 +167,5 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     LocalFree(argv_w);
 
     return rc;
-}
-#else
-int main(int argc, char** argv) {
-    return run(argc, argv);
 }
 #endif

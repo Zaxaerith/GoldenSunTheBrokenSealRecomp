@@ -1,8 +1,10 @@
 # Build trees and binary outputs
 build/
+build-*/
 bin/
 out/
 dist/
+release-stage/
 *.exe
 *.dll
 *.a
@@ -11,6 +13,9 @@ dist/
 *.obj
 *.so
 *.dylib
+*.pdb
+*.ilk
+*.exp
 
 # Nintendo ROMs, BIOS dumps, and cartridge saves (never commit or distribute)
 *.gba
@@ -23,15 +28,21 @@ gba_bios.bin
 open_gba_bios.bin
 GBA_bios.rom
 *.sav
+*.sa1
 *.srm
 *.ss*
 *.fla
 *.eep
+saves/
+*.cfg
+*.ini
 
 # Generated intermediate / recompile caches
 recomp/
 recomp_cache/
-src/generated/
+.deps/
+logs/
+diagnostics/
 recomp_master_misses*.toml.frag
 recomp_coverage*.json
 recomp_seed_proposals.toml
@@ -49,7 +60,9 @@ vendor/
 *.png
 *.txt
 !README.md
+!README.zh-CN.md
 !LICENSE
+!THIRD_PARTY_NOTICES.md
 !CMakeLists.txt
 !**/CMakeLists.txt
 !symbols/*.tsv
@@ -65,7 +78,10 @@ Desktop.ini
 
 # Agent notes, internal briefs, and private documentation (keep on disk, do not publish)
 AGENT_PROMPT.md
-docs/
+docs/*
+!docs/CLEANUP.md
+!docs/FRAMEWORK_PIN.json
+!third_party_licenses/*.txt
 *.tmp
 *.bak
 ~*
